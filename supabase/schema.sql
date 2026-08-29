@@ -5,7 +5,8 @@ create extension if not exists "pgcrypto";
 create table if not exists public.subjects (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
-  name text not null
+  name text not null,
+  year int not null default 1 check (year between 1 and 4)
 );
 
 create table if not exists public.documents (
@@ -14,11 +15,15 @@ create table if not exists public.documents (
   subject_id uuid not null references public.subjects (id) on delete restrict,
   category text not null,
   term_year text not null,
+  year int not null default 1 check (year between 1 and 4),
   file_url text not null,
   uploader_name text not null default 'anonymous',
   status text not null default 'approved',
   created_at timestamptz not null default now()
 );
+
+alter table public.subjects add column if not exists year int;
+alter table public.documents add column if not exists year int;
 
 alter table public.subjects enable row level security;
 alter table public.documents enable row level security;
@@ -29,6 +34,11 @@ create policy "Public can read subjects"
 
 create policy "Public can insert subjects"
   on public.subjects for insert
+  with check (true);
+
+create policy "Public can update subjects"
+  on public.subjects for update
+  using (true)
   with check (true);
 
 create policy "Public can read approved documents"

@@ -1,12 +1,13 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { CATEGORIES, type CategoryId, type Subject } from '@/lib/data'
+import { CATEGORIES, YEAR_LEVELS, type CategoryId, type Subject, type YearLevel } from '@/lib/data'
 import { CloudUpload, FileText, LoaderCircle, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { SubjectCombobox } from '@/components/subject-combobox'
+import { TermCombobox } from '@/components/term-combobox'
 
-const TERMS = [
+export const DEFAULT_TERMS = [
   'เทอม 1 / 2569',
   'เทอม 2 / 2569',
   'เทอม 1 / 2568',
@@ -22,6 +23,7 @@ export type UploadPayload = {
   subjectCode: string
   category: CategoryId
   term: string
+  year: YearLevel
   uploader: string
   file: File
 }
@@ -32,17 +34,21 @@ export function UploadModal({
   subjects,
   onAddSubject,
   onSubmit,
+  terms = DEFAULT_TERMS,
 }: {
   open: boolean
   onClose: () => void
   subjects: Subject[]
-  onAddSubject: (query: string) => Promise<string>
+  onAddSubject: (query: string, year: YearLevel) => Promise<string>
   onSubmit: (payload: UploadPayload) => Promise<void>
+  terms?: string[]
 }) {
   const [title, setTitle] = useState('')
   const [subjectCode, setSubjectCode] = useState('')
   const [category, setCategory] = useState<CategoryId>('sheet')
-  const [term, setTerm] = useState(TERMS[0])
+  const [term, setTerm] = useState('')
+  const [customTerms, setCustomTerms] = useState<string[]>([])
+  const [year, setYear] = useState<YearLevel>(1)
   const [uploader, setUploader] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [dragging, setDragging] = useState(false)
@@ -56,7 +62,9 @@ export function UploadModal({
       setTitle('')
       setSubjectCode('')
       setCategory('sheet')
-      setTerm(TERMS[0])
+      setTerm('')
+      setCustomTerms([])
+      setYear(1)
       setUploader('')
       setFile(null)
       setError('')
@@ -93,7 +101,7 @@ export function UploadModal({
     setAddingSubject(true)
     setError('')
     try {
-      const code = await onAddSubject(query)
+      const code = await onAddSubject(query, year)
       setSubjectCode(code)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'เพิ่มวิชาไม่สำเร็จ')
@@ -106,6 +114,7 @@ export function UploadModal({
     if (!file) return setError('กรุณาเลือกไฟล์ PDF ก่อน')
     if (!title.trim()) return setError('กรุณาตั้งชื่อเอกสาร')
     if (!subjectCode) return setError('กรุณาเลือกวิชา')
+    if (!term.trim()) return setError('กรุณาเลือกหรือพิมพ์เทอม / ปีการศึกษา')
     setError('')
     setSubmitting(true)
     try {
@@ -113,7 +122,8 @@ export function UploadModal({
         title: title.trim(),
         subjectCode,
         category,
-        term,
+        term: term.trim(),
+        year,
         uploader: uploader.trim() || 'anonymous',
         file,
       })
@@ -211,10 +221,34 @@ export function UploadModal({
             <SubjectCombobox
               subjects={subjects}
               value={subjectCode}
-              onSelect={setSubjectCode}
+              onSelect={(code) => {
+                setSubjectCode(code)
+                const selected = subjects.find((s) => s.code === code)
+                if (selected) setYear(selected.year)
+              }}
               onAddNew={handleAddSubject}
               disabled={addingSubject}
             />
+          </Field>
+
+          <Field label="ชั้นปี">
+            <div className="grid grid-cols-4 gap-2">
+              {YEAR_LEVELS.map((y) => (
+                <button
+                  key={y.id}
+                  type="button"
+                  onClick={() => setYear(y.id)}
+                  aria-pressed={year === y.id}
+                  className={`h-11 rounded-lg border text-sm font-medium transition-colors ${
+                    year === y.id
+                      ? 'border-accent bg-accent/10 text-foreground'
+                      : 'border-input text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {y.label}
+                </button>
+              ))}
+            </div>
           </Field>
 
           <Field label="ประเภทเอกสาร">
@@ -249,17 +283,14 @@ export function UploadModal({
           </Field>
 
           <Field label="เทอม / ปีการศึกษา">
-            <select
+            <TermCombobox
+              options={[...new Set([...DEFAULT_TERMS, ...terms, ...customTerms])]}
               value={term}
-              onChange={(e) => setTerm(e.target.value)}
-              className={inputClass}
-            >
-              {TERMS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+              onSelect={(next) => {
+                setTerm(next)
+                setCustomTerms((prev) => (prev.includes(next) ? prev : [...prev, next]))
+              }}
+            />
           </Field>
 
           <Field label="ชื่อผู้แบ่งปัน / นามแฝง (ไม่บังคับ)">

@@ -41,7 +41,7 @@ export function FilterBar({
           <input
             value={search}
             onChange={(e) => onSearch(e.target.value)}
-            placeholder="ค้นหารหัสวิชา (เช่น CPE302), ชื่อวิชา หรือชื่อเอกสาร..."
+            placeholder="ค้นหารหัสวิชา (เช่น EN812303), ชื่อวิชา หรือชื่อเอกสาร..."
             className="h-12 w-full rounded-xl border border-input bg-card pl-10 pr-4 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
           />
         </div>

@@ -10,13 +10,22 @@ export const CATEGORIES: { id: CategoryId; label: string; short: string }[] = [
 export const categoryLabel = (id: CategoryId) =>
   CATEGORIES.find((c) => c.id === id)?.label ?? id
 
+export type YearLevel = 1 | 2 | 3 | 4
+
 export type Subject = {
   id: string
   code: string
   name: string
   nameEn: string
-  year: 1 | 2 | 3 | 4
+  year: YearLevel
 }
+
+export const YEAR_LEVELS: { id: YearLevel; label: string }[] = [
+  { id: 1, label: 'ปี 1' },
+  { id: 2, label: 'ปี 2' },
+  { id: 3, label: 'ปี 3' },
+  { id: 4, label: 'ปี 4' },
+]
 
 export type CpeDoc = {
   id: string
@@ -27,22 +36,22 @@ export type CpeDoc = {
   term: string
   uploader: string
   fileUrl: string
+  year: YearLevel
 }
 
-export function yearFromCode(code: string): 1 | 2 | 3 | 4 {
-  const digit = code.match(/\d/)
-  const n = digit ? Number(digit[0]) : 1
+export function asYear(value: number | string | null | undefined): YearLevel {
+  const n = Number(value)
   if (n === 2 || n === 3 || n === 4) return n
   return 1
 }
 
-export function toSubject(row: { id: string; code: string; name: string }): Subject {
+export function toSubject(row: { id: string; code: string; name: string; year?: number | null }): Subject {
   return {
     id: row.id,
     code: row.code,
     name: row.name,
     nameEn: row.name,
-    year: yearFromCode(row.code),
+    year: asYear(row.year),
   }
 }
 

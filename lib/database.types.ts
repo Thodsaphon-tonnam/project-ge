@@ -8,16 +8,19 @@ export type Database = {
           id: string
           code: string
           name: string
+          year: number
         }
         Insert: {
           id?: string
           code: string
           name: string
+          year?: number
         }
         Update: {
           id?: string
           code?: string
           name?: string
+          year?: number
         }
         Relationships: []
       }
@@ -28,6 +31,7 @@ export type Database = {
           subject_id: string
           category: string
           term_year: string
+          year: number
           file_url: string
           uploader_name: string
           status: string
@@ -39,6 +43,7 @@ export type Database = {
           subject_id: string
           category: string
           term_year: string
+          year?: number
           file_url: string
           uploader_name?: string
           status?: string
@@ -50,6 +55,7 @@ export type Database = {
           subject_id?: string
           category?: string
           term_year?: string
+          year?: number
           file_url?: string
           uploader_name?: string
           status?: string

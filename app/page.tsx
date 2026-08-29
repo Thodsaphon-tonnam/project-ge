@@ -64,7 +64,7 @@ export default function Page() {
     return docs.filter((d) => {
       const subject = subjectMap.get(d.subjectCode)
       if (view === 'favorites' && !favorites.has(d.id)) return false
-      if (year !== 'all' && String(subject?.year ?? '') !== year) return false
+      if (year !== 'all' && String(d.year) !== year) return false
       if (chip === 'exam' && !(d.category === 'midterm' || d.category === 'final')) return false
       if (chip === 'sheet' && d.category !== 'sheet') return false
       if (chip === 'lab' && d.category !== 'lab') return false
@@ -88,11 +88,11 @@ export default function Page() {
     })
   }
 
-  async function addSubject(query: string): Promise<string> {
-    const created = await createSubject(query)
+  async function addSubject(query: string, yearLevel: Subject['year']): Promise<string> {
+    const created = await createSubject(query, yearLevel)
     setSubjects((prev) => {
-      if (prev.some((s) => s.id === created.id)) return prev
-      return [...prev, created]
+      const without = prev.filter((s) => s.id !== created.id)
+      return [...without, created]
     })
     return created.code
   }
@@ -100,10 +100,13 @@ export default function Page() {
   async function handleUpload(payload: UploadPayload) {
     const newDoc = await uploadDocument({ ...payload, subjects })
     setDocs((prev) => [newDoc, ...prev])
-    if (!subjects.some((s) => s.code === newDoc.subjectCode)) {
-      const { subjects: nextSubjects } = await fetchDocuments()
-      setSubjects(nextSubjects)
-    }
+    setSubjects((prev) => {
+      const next = prev.map((s) =>
+        s.code === newDoc.subjectCode ? { ...s, year: payload.year } : s,
+      )
+      if (next.some((s) => s.code === newDoc.subjectCode)) return next
+      return [...next, { id: newDoc.subjectId, code: newDoc.subjectCode, name: payload.subjectCode, nameEn: payload.subjectCode, year: payload.year }]
+    })
     setUploadOpen(false)
   }
 
@@ -117,7 +120,7 @@ export default function Page() {
             คลังข้อสอบและชีทสรุป วิศวกรรมคอมพิวเตอร์
           </h1>
           <p className="mt-1.5 max-w-2xl text-pretty text-sm text-muted-foreground sm:text-base">
-            รวมข้อสอบเก่า ชีทสรุป และสรุปแลปจากรุ่นพี่ CPE ค้นหาด้วยรหัสวิชา
+            รวมข้อสอบเก่า ชีทสรุป และสรุปแลปจากรุ่นพี่ CoE ค้นหาด้วยรหัสวิชา
             แล้วดาวน์โหลดได้ทันที พร้อมบันทึกเอกสารที่ชอบไว้ในรายการโปรด
           </p>
         </section>
@@ -184,6 +187,7 @@ export default function Page() {
         open={uploadOpen}
         onClose={() => setUploadOpen(false)}
         subjects={subjects}
+        terms={docs.map((d) => d.term)}
         onAddSubject={addSubject}
         onSubmit={handleUpload}
       />

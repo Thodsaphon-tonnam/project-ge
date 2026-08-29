@@ -23,11 +23,9 @@ export function DocumentCard({
           <span className="rounded-md bg-primary px-2 py-0.5 font-mono text-xs font-semibold text-primary-foreground">
             {doc.subjectCode}
           </span>
-          {subject && (
-            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-              ปี {subject.year}
-            </span>
-          )}
+          <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+            ปี {doc.year}
+          </span>
           <span className="rounded-md border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
             {categoryLabel(doc.category)}
           </span>

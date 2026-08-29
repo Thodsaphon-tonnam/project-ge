@@ -12,7 +12,7 @@ export function SiteHeader({ onUpload }: { onUpload: () => void }) {
             <span className="flex size-9 items-center justify-center rounded-lg bg-accent text-accent-foreground">
               <Boxes className="size-5" />
             </span>
-            <span className="text-lg font-bold tracking-tight">CPE Vault</span>
+            <span className="text-lg font-bold tracking-tight">CoE ส่งต่อ</span>
           </a>
           <nav className="hidden md:flex">
             <a

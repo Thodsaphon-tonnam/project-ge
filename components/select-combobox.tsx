@@ -78,6 +78,7 @@ export function SelectCombobox({
         aria-expanded={open}
         aria-label={ariaLabel}
         className={comboTriggerClass}
+        data-combobox-trigger
       >
         <span className="flex min-w-0 flex-1 items-center gap-2.5">
           {icon}
@@ -103,7 +104,8 @@ export function SelectCombobox({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={searchPlaceholder ?? 'ค้นหา...'}
-                className="h-8 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                data-combobox-search
+                className="h-9 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground md:h-8 md:text-sm"
               />
             </div>
           )}
@@ -118,6 +120,7 @@ export function SelectCombobox({
                     setOpen(false)
                   }}
                   className={cn(comboItemClass(value === o.value), 'flex items-center gap-3')}
+                  data-combobox-item
                 >
                   <span className="min-w-0 flex-1">{o.content ?? o.label}</span>
                   {value === o.value && <Check className="size-4 shrink-0 text-accent" />}

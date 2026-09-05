@@ -122,7 +122,7 @@ export function CommentModal({
                 onChange={(e) => setBody(e.target.value)}
                 rows={3}
                 placeholder="เขียนความคิดเห็นหรือติชมเอกสารนี้..."
-                className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+                className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 md:text-sm"
               />
               {error && <p className="text-sm font-medium text-destructive">{error}</p>}
               <div className="flex justify-end">

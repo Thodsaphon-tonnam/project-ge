@@ -55,7 +55,7 @@ export function FilterBar({
             value={search}
             onChange={(e) => onSearch(e.target.value)}
             placeholder="ค้นหารหัสวิชา (เช่น EN812303), ชื่อวิชา หรือชื่อเอกสาร..."
-            className="h-12 w-full rounded-xl border border-input bg-card pl-10 pr-4 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+            className="h-12 w-full rounded-xl border border-input bg-card pl-10 pr-4 text-base text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 md:text-sm"
           />
         </div>
 
@@ -93,7 +93,7 @@ export function FilterBar({
                 keywords: `${s.code} ${s.nameEn ?? ''}`,
                 trigger: (
                   <span className="flex min-w-0 items-center gap-2">
-                    <span className="shrink-0 font-mono text-xs font-semibold tracking-wide text-primary">
+                    <span className="shrink-0 font-mono text-sm font-semibold tracking-wide text-primary md:text-xs">
                       {s.code}
                     </span>
                     <span className="min-w-0 truncate">{s.name}</span>
@@ -101,11 +101,11 @@ export function FilterBar({
                 ),
                 content: (
                   <span className="grid min-w-0 w-full grid-cols-[7.5rem_minmax(0,1fr)_auto] items-center gap-3">
-                    <span className="truncate font-mono text-xs font-semibold tracking-wide text-primary">
+                    <span className="truncate font-mono text-sm font-semibold tracking-wide text-primary md:text-xs">
                       {s.code}
                     </span>
                     <span className="min-w-0 truncate text-foreground">{s.name}</span>
-                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                    <span className="shrink-0 whitespace-nowrap text-sm text-muted-foreground md:text-xs">
                       ปี {s.year}
                     </span>
                   </span>

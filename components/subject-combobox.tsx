@@ -23,10 +23,10 @@ function SubjectRow({
 }) {
   return (
     <span className="grid min-w-0 flex-1 grid-cols-[7.5rem_minmax(0,1fr)_auto] items-center gap-3">
-      <span className="truncate font-mono text-xs font-semibold tracking-wide text-primary">{code}</span>
+      <span className="truncate font-mono text-sm font-semibold tracking-wide text-primary md:text-xs">{code}</span>
       <span className="min-w-0 truncate text-foreground">{name}</span>
       {year != null && (
-        <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">ปี {year}</span>
+        <span className="shrink-0 whitespace-nowrap text-sm text-muted-foreground md:text-xs">ปี {year}</span>
       )}
     </span>
   )
@@ -79,6 +79,7 @@ export function SubjectCombobox({
         disabled={disabled}
         aria-expanded={open}
         className={comboTriggerClass}
+        data-combobox-trigger
       >
         {selected ? (
           <span className="min-w-0 flex-1">
@@ -100,7 +101,8 @@ export function SubjectCombobox({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="พิมพ์รหัส เช่น CPE302 หรือชื่อวิชา"
-              className="h-8 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              data-combobox-search
+              className="h-9 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground md:h-8 md:text-sm"
             />
           </div>
 
@@ -129,12 +131,13 @@ export function SubjectCombobox({
                     comboItemClass(value === s.code),
                     'grid grid-cols-[7.5rem_minmax(0,1fr)_auto_1rem] items-center gap-3',
                   )}
+                  data-combobox-item
                 >
-                  <span className="truncate font-mono text-xs font-semibold tracking-wide text-primary">
+                  <span className="truncate font-mono text-sm font-semibold tracking-wide text-primary md:text-xs">
                     {s.code}
                   </span>
                   <span className="min-w-0 truncate text-foreground">{s.name}</span>
-                  <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                  <span className="shrink-0 whitespace-nowrap text-sm text-muted-foreground md:text-xs">
                     ปี {s.year}
                   </span>
                   <span className="flex size-4 items-center justify-center">

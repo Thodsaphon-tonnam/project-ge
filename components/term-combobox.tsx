@@ -52,6 +52,7 @@ export function TermCombobox({
         disabled={disabled}
         aria-expanded={open}
         className={comboTriggerClass}
+        data-combobox-trigger
       >
         {value ? (
           <span className="min-w-0 flex-1 truncate text-foreground">{value}</span>
@@ -79,7 +80,8 @@ export function TermCombobox({
                 }
               }}
               placeholder="พิมพ์เช่น เทอม 1 / 2570"
-              className="h-8 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              data-combobox-search
+              className="h-9 w-full bg-transparent text-base outline-none placeholder:text-muted-foreground md:h-8 md:text-sm"
             />
           </div>
 
@@ -94,6 +96,7 @@ export function TermCombobox({
                     setOpen(false)
                   }}
                   className={cn(comboItemClass(value === t), 'flex items-center gap-3')}
+                  data-combobox-item
                 >
                   <span className="min-w-0 flex-1 truncate text-foreground">{t}</span>
                   {value === t && <Check className="size-4 shrink-0 text-accent" />}

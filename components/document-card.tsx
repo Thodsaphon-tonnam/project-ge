@@ -21,15 +21,17 @@ export function DocumentCard({
   return (
     <article className="group flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-md">
       <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="rounded-md bg-primary px-2 py-0.5 font-mono text-xs font-semibold text-primary-foreground">
+        <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+          <span className="inline-flex max-w-full justify-self-start truncate rounded-md bg-primary px-2 py-0.5 font-mono text-xs font-semibold tracking-wide text-primary-foreground">
             {doc.subjectCode}
           </span>
-          <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
-            ปี {doc.year}
-          </span>
-          <span className="rounded-md border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
-            {categoryLabel(doc.category)}
+          <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+            <span className="whitespace-nowrap rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+              ปี {doc.year}
+            </span>
+            <span className="whitespace-nowrap rounded-md border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+              {categoryLabel(doc.category)}
+            </span>
           </span>
         </div>
 

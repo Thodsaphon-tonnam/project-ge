@@ -1,8 +1,36 @@
 'use client'
 
+import {
+  comboItemClass,
+  comboListClass,
+  comboPanelClass,
+  comboSearchClass,
+  comboTriggerClass,
+} from '@/components/ui/combobox-styles'
 import type { Subject } from '@/lib/data'
+import { cn } from '@/lib/utils'
 import { Check, ChevronsUpDown, Plus, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+
+function SubjectRow({
+  code,
+  name,
+  year,
+}: {
+  code: string
+  name: string
+  year?: number
+}) {
+  return (
+    <span className="grid min-w-0 flex-1 grid-cols-[7.5rem_minmax(0,1fr)_auto] items-center gap-3">
+      <span className="truncate font-mono text-xs font-semibold tracking-wide text-primary">{code}</span>
+      <span className="min-w-0 truncate text-foreground">{name}</span>
+      {year != null && (
+        <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">ปี {year}</span>
+      )}
+    </span>
+  )
+}
 
 export function SubjectCombobox({
   subjects,
@@ -50,36 +78,44 @@ export function SubjectCombobox({
         onClick={() => !disabled && setOpen((o) => !o)}
         disabled={disabled}
         aria-expanded={open}
-        className="flex h-11 w-full items-center justify-between rounded-lg border border-input bg-background px-3 text-left text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+        className={comboTriggerClass}
       >
         {selected ? (
-          <span className="flex items-center gap-2 truncate">
-            <span className="rounded bg-primary px-1.5 py-0.5 font-mono text-xs font-semibold text-primary-foreground">
-              {selected.code}
-            </span>
-            <span className="truncate text-foreground">{selected.name}</span>
+          <span className="min-w-0 flex-1">
+            <SubjectRow code={selected.code} name={selected.name} />
           </span>
         ) : (
-          <span className="text-muted-foreground">เลือกหรือค้นหารหัสวิชา...</span>
+          <span className="truncate text-muted-foreground">เลือกหรือค้นหารหัสวิชา...</span>
         )}
         <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
       </button>
 
       {open && (
-        <div className="absolute z-40 mt-1.5 w-full overflow-hidden rounded-lg border border-border bg-popover shadow-lg">
-          <div className="flex items-center gap-2 border-b border-border px-3">
-            <Search className="size-4 text-muted-foreground" />
+        <div className={comboPanelClass}>
+          <div className={comboSearchClass}>
+            <Search className="size-4 shrink-0 text-muted-foreground" />
             {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="พิมพ์รหัส เช่น CPE302 หรือชื่อวิชา"
-              className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              className="h-8 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
 
-          <ul className="max-h-56 overflow-y-auto py-1">
+          <ul className={comboListClass}>
+            {filtered.length > 0 && (
+              <li
+                className="grid grid-cols-[7.5rem_minmax(0,1fr)_auto_1rem] items-center gap-3 px-3 py-1.5 text-[11px] font-medium text-muted-foreground"
+                aria-hidden
+              >
+                <span>รหัสวิชา</span>
+                <span>ชื่อวิชา</span>
+                <span>ชั้นปี</span>
+                <span />
+              </li>
+            )}
             {filtered.map((s) => (
               <li key={s.code}>
                 <button
@@ -89,14 +125,21 @@ export function SubjectCombobox({
                     setQuery('')
                     setOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                  className={cn(
+                    comboItemClass(value === s.code),
+                    'grid grid-cols-[7.5rem_minmax(0,1fr)_auto_1rem] items-center gap-3',
+                  )}
                 >
-                  <span className="w-16 shrink-0 font-mono text-xs font-semibold text-primary">
+                  <span className="truncate font-mono text-xs font-semibold tracking-wide text-primary">
                     {s.code}
                   </span>
-                  <span className="flex-1 truncate text-foreground">{s.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">ปี {s.year}</span>
-                  {value === s.code && <Check className="size-4 shrink-0 text-accent" />}
+                  <span className="min-w-0 truncate text-foreground">{s.name}</span>
+                  <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                    ปี {s.year}
+                  </span>
+                  <span className="flex size-4 items-center justify-center">
+                    {value === s.code && <Check className="size-4 text-accent" />}
+                  </span>
                 </button>
               </li>
             ))}
@@ -116,10 +159,10 @@ export function SubjectCombobox({
                 setQuery('')
                 setOpen(false)
               }}
-              className="flex w-full items-center gap-2 border-t border-border bg-accent/10 px-3 py-3 text-left text-sm font-medium text-accent transition-colors hover:bg-accent/20"
+              className="mt-1 flex w-full items-center gap-2 rounded-lg bg-accent/10 px-3 py-2.5 text-left text-sm font-medium text-accent transition-colors hover:bg-accent/20"
             >
-              <Plus className="size-4" />
-              <span>
+              <Plus className="size-4 shrink-0" />
+              <span className="min-w-0 truncate">
                 เพิ่มวิชาใหม่:{' '}
                 <span className="font-semibold text-foreground">{query.trim()}</span>
               </span>

@@ -1,7 +1,8 @@
 'use client'
 
-import { BookOpen, Heart, Layers, Search } from 'lucide-react'
+import { SelectCombobox } from '@/components/select-combobox'
 import type { Subject } from '@/lib/data'
+import { BookOpen, Heart, Layers, Search } from 'lucide-react'
 
 export type ChipId = 'all' | 'exam' | 'sheet' | 'lab'
 export type ViewId = 'all' | 'favorites'
@@ -58,39 +59,60 @@ export function FilterBar({
           />
         </div>
 
-        <div className="relative sm:w-44">
-          <Layers className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <select
-            value={year}
-            onChange={(e) => onYear(e.target.value)}
-            aria-label="กรองตามชั้นปี"
-            className="h-12 w-full appearance-none rounded-xl border border-input bg-card pl-10 pr-8 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
-          >
-            <option value="all">ทุกชั้นปี</option>
-            <option value="1">ปี 1</option>
-            <option value="2">ปี 2</option>
-            <option value="3">ปี 3</option>
-            <option value="4">ปี 4</option>
-          </select>
-        </div>
+        <SelectCombobox
+          className="sm:w-48"
+          value={year}
+          onChange={onYear}
+          ariaLabel="กรองตามชั้นปี"
+          placeholder="เลือกชั้นปี"
+          icon={<Layers className="size-4 shrink-0 text-muted-foreground" />}
+          options={[
+            { value: 'all', label: 'ทุกชั้นปี' },
+            { value: '1', label: 'ปี 1' },
+            { value: '2', label: 'ปี 2' },
+            { value: '3', label: 'ปี 3' },
+            { value: '4', label: 'ปี 4' },
+          ]}
+        />
 
         {year !== 'all' && (
-          <div className="relative sm:w-64">
-            <BookOpen className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <select
-              value={subjectCode}
-              onChange={(e) => onSubjectCode(e.target.value)}
-              aria-label="กรองตามชื่อวิชา"
-              className="h-12 w-full appearance-none rounded-xl border border-input bg-card pl-10 pr-8 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
-            >
-              <option value="all">ทุกวิชา</option>
-              {yearSubjects.map((s) => (
-                <option key={s.id} value={s.code}>
-                  {s.name} ({s.code})
-                </option>
-              ))}
-            </select>
-          </div>
+          <SelectCombobox
+            className="sm:min-w-80 sm:flex-1"
+            value={subjectCode}
+            onChange={onSubjectCode}
+            ariaLabel="กรองตามชื่อวิชา"
+            placeholder="เลือกวิชา"
+            searchable
+            searchPlaceholder="ค้นหารหัสหรือชื่อวิชา..."
+            icon={<BookOpen className="size-4 shrink-0 text-muted-foreground" />}
+            options={[
+              { value: 'all', label: 'ทุกวิชา' },
+              ...yearSubjects.map((s) => ({
+                value: s.code,
+                label: s.name,
+                keywords: `${s.code} ${s.nameEn ?? ''}`,
+                trigger: (
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="shrink-0 font-mono text-xs font-semibold tracking-wide text-primary">
+                      {s.code}
+                    </span>
+                    <span className="min-w-0 truncate">{s.name}</span>
+                  </span>
+                ),
+                content: (
+                  <span className="grid min-w-0 w-full grid-cols-[7.5rem_minmax(0,1fr)_auto] items-center gap-3">
+                    <span className="truncate font-mono text-xs font-semibold tracking-wide text-primary">
+                      {s.code}
+                    </span>
+                    <span className="min-w-0 truncate text-foreground">{s.name}</span>
+                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
+                      ปี {s.year}
+                    </span>
+                  </span>
+                ),
+              })),
+            ]}
+          />
         )}
       </div>
 

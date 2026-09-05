@@ -1,7 +1,15 @@
 'use client'
 
+import {
+  comboItemClass,
+  comboListClass,
+  comboPanelClass,
+  comboSearchClass,
+  comboTriggerClass,
+} from '@/components/ui/combobox-styles'
 import { Check, ChevronsUpDown, Plus, Search } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 export function TermCombobox({
   options,
@@ -43,20 +51,20 @@ export function TermCombobox({
         onClick={() => !disabled && setOpen((o) => !o)}
         disabled={disabled}
         aria-expanded={open}
-        className="flex h-11 w-full items-center justify-between rounded-lg border border-input bg-background px-3 text-left text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+        className={comboTriggerClass}
       >
         {value ? (
-          <span className="truncate text-foreground">{value}</span>
+          <span className="min-w-0 flex-1 truncate text-foreground">{value}</span>
         ) : (
-          <span className="text-muted-foreground">เลือกหรือพิมพ์เทอม / ปีการศึกษา...</span>
+          <span className="truncate text-muted-foreground">เลือกหรือพิมพ์เทอม / ปีการศึกษา...</span>
         )}
         <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
       </button>
 
       {open && (
-        <div className="absolute z-40 mt-1.5 w-full overflow-hidden rounded-lg border border-border bg-popover shadow-lg">
-          <div className="flex items-center gap-2 border-b border-border px-3">
-            <Search className="size-4 text-muted-foreground" />
+        <div className={comboPanelClass}>
+          <div className={comboSearchClass}>
+            <Search className="size-4 shrink-0 text-muted-foreground" />
             {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
             <input
               autoFocus
@@ -71,11 +79,11 @@ export function TermCombobox({
                 }
               }}
               placeholder="พิมพ์เช่น เทอม 1 / 2570"
-              className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              className="h-8 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
 
-          <ul className="max-h-56 overflow-y-auto py-1">
+          <ul className={comboListClass}>
             {filtered.map((t) => (
               <li key={t}>
                 <button
@@ -85,9 +93,9 @@ export function TermCombobox({
                     setQuery('')
                     setOpen(false)
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-muted"
+                  className={cn(comboItemClass(value === t), 'flex items-center gap-3')}
                 >
-                  <span className="flex-1 truncate text-foreground">{t}</span>
+                  <span className="min-w-0 flex-1 truncate text-foreground">{t}</span>
                   {value === t && <Check className="size-4 shrink-0 text-accent" />}
                 </button>
               </li>
@@ -108,10 +116,10 @@ export function TermCombobox({
                 setQuery('')
                 setOpen(false)
               }}
-              className="flex w-full items-center gap-2 border-t border-border bg-accent/10 px-3 py-3 text-left text-sm font-medium text-accent transition-colors hover:bg-accent/20"
+              className="mt-1 flex w-full items-center gap-2 rounded-lg bg-accent/10 px-3 py-2.5 text-left text-sm font-medium text-accent transition-colors hover:bg-accent/20"
             >
-              <Plus className="size-4" />
-              <span>
+              <Plus className="size-4 shrink-0" />
+              <span className="min-w-0 truncate">
                 เพิ่มเทอมใหม่:{' '}
                 <span className="font-semibold text-foreground">{query.trim()}</span>
               </span>

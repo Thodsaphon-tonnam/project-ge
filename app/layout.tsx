@@ -1,3 +1,4 @@
+import { AuthProvider } from '@/components/auth-provider'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Noto_Sans_Thai, Geist_Mono } from 'next/font/google'
@@ -34,8 +35,10 @@ export default function RootLayout({
   return (
     <html lang="th" className={`light ${notoThai.variable} ${geistMono.variable}`}>
       <body className="bg-background font-sans antialiased">
-        {children}
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <AuthProvider>
+          {children}
+          {process.env.NODE_ENV === 'production' && <Analytics />}
+        </AuthProvider>
       </body>
     </html>
   )

@@ -1,5 +1,8 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | null } | Json[]
 
+export type UserRole = 'user' | 'admin'
+export type DocumentStatus = 'pending' | 'approved' | 'rejected'
+
 export type Database = {
   public: {
     Tables: {
@@ -35,6 +38,7 @@ export type Database = {
           file_url: string
           uploader_name: string
           status: string
+          user_id: string | null
           created_at: string
         }
         Insert: {
@@ -47,6 +51,7 @@ export type Database = {
           file_url: string
           uploader_name?: string
           status?: string
+          user_id?: string | null
           created_at?: string
         }
         Update: {
@@ -59,6 +64,7 @@ export type Database = {
           file_url?: string
           uploader_name?: string
           status?: string
+          user_id?: string | null
           created_at?: string
         }
         Relationships: [
@@ -71,12 +77,74 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          id: string
+          email: string | null
+          display_name: string
+          role: string
+          created_at: string
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          display_name?: string
+          role?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          display_name?: string
+          role?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          id: string
+          document_id: string
+          user_id: string | null
+          author_name: string
+          body: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          document_id: string
+          user_id?: string | null
+          author_name?: string
+          body: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          document_id?: string
+          user_id?: string | null
+          author_name?: string
+          body?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'comments_document_id_fkey'
+            columns: ['document_id']
+            isOneToOne: false
+            referencedRelation: 'documents'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

@@ -9,6 +9,13 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 export const supabase = createClient<Database>(
   supabaseUrl ?? 'https://placeholder.supabase.co',
   supabaseAnonKey ?? 'public-anon-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  },
 )
 
 export const EXAM_FILES_BUCKET = 'exam-files'

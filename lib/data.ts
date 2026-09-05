@@ -27,6 +27,8 @@ export const YEAR_LEVELS: { id: YearLevel; label: string }[] = [
   { id: 4, label: 'ปี 4' },
 ]
 
+export type DocumentStatus = 'pending' | 'approved' | 'rejected'
+
 export type CpeDoc = {
   id: string
   title: string
@@ -37,6 +39,21 @@ export type CpeDoc = {
   uploader: string
   fileUrl: string
   year: YearLevel
+  status: DocumentStatus
+}
+
+export type DocComment = {
+  id: string
+  documentId: string
+  userId: string | null
+  authorName: string
+  body: string
+  createdAt: string
+}
+
+export function asStatus(value: string | null | undefined): DocumentStatus {
+  if (value === 'pending' || value === 'rejected') return value
+  return 'approved'
 }
 
 export function asYear(value: number | string | null | undefined): YearLevel {

@@ -35,6 +35,7 @@ export function UploadModal({
   onAddSubject,
   onSubmit,
   terms = DEFAULT_TERMS,
+  defaultUploader = '',
 }: {
   open: boolean
   onClose: () => void
@@ -42,6 +43,7 @@ export function UploadModal({
   onAddSubject: (query: string, year: YearLevel) => Promise<string>
   onSubmit: (payload: UploadPayload) => Promise<void>
   terms?: string[]
+  defaultUploader?: string
 }) {
   const [title, setTitle] = useState('')
   const [subjectCode, setSubjectCode] = useState('')
@@ -65,12 +67,12 @@ export function UploadModal({
       setTerm('')
       setCustomTerms([])
       setYear(1)
-      setUploader('')
+      setUploader(defaultUploader)
       setFile(null)
       setError('')
       setSubmitting(false)
     }
-  }, [open])
+  }, [open, defaultUploader])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -146,7 +148,7 @@ export function UploadModal({
             <h2 id="upload-title" className="text-lg font-bold text-card-foreground">
               อัปโหลดเอกสาร
             </h2>
-            <p className="text-sm text-muted-foreground">แบ่งปันข้อสอบหรือชีทสรุปให้เพื่อน CPE</p>
+            <p className="text-sm text-muted-foreground">เอกสารจะแสดงในคลังหลังจากแอดมินอนุมัติ</p>
           </div>
           <button
             type="button"

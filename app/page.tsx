@@ -1,5 +1,7 @@
 'use client'
 
+import { useAuth } from '@/components/auth-provider'
+import { CommentModal } from '@/components/comment-modal'
 import { DocumentCard } from '@/components/document-card'
 import { FilterBar, type ChipId, type ViewId } from '@/components/filter-bar'
 import { SiteHeader } from '@/components/site-header'
@@ -12,17 +14,21 @@ import { FolderOpen, LoaderCircle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export default function Page() {
+  const { user, profile, isAdmin } = useAuth()
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [docs, setDocs] = useState<CpeDoc[]>([])
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [notice, setNotice] = useState('')
 
   const [search, setSearch] = useState('')
   const [year, setYear] = useState('all')
+  const [subjectCode, setSubjectCode] = useState('all')
   const [chip, setChip] = useState<ChipId>('all')
   const [view, setView] = useState<ViewId>('all')
   const [uploadOpen, setUploadOpen] = useState(false)
+  const [commentDoc, setCommentDoc] = useState<CpeDoc | null>(null)
 
   useEffect(() => {
     setFavorites(new Set(loadFavorites()))
@@ -65,6 +71,7 @@ export default function Page() {
       const subject = subjectMap.get(d.subjectCode)
       if (view === 'favorites' && !favorites.has(d.id)) return false
       if (year !== 'all' && String(d.year) !== year) return false
+      if (subjectCode !== 'all' && d.subjectCode !== subjectCode) return false
       if (chip === 'exam' && !(d.category === 'midterm' || d.category === 'final')) return false
       if (chip === 'sheet' && d.category !== 'sheet') return false
       if (chip === 'lab' && d.category !== 'lab') return false
@@ -76,7 +83,7 @@ export default function Page() {
       }
       return true
     })
-  }, [docs, subjectMap, favorites, view, year, chip, search])
+  }, [docs, subjectMap, favorites, view, year, subjectCode, chip, search])
 
   function toggleFavorite(id: string) {
     setFavorites((prev) => {
@@ -98,16 +105,40 @@ export default function Page() {
   }
 
   async function handleUpload(payload: UploadPayload) {
-    const newDoc = await uploadDocument({ ...payload, subjects })
-    setDocs((prev) => [newDoc, ...prev])
+    const newDoc = await uploadDocument({
+      ...payload,
+      subjects,
+      userId: user?.id,
+      autoApprove: isAdmin,
+    })
     setSubjects((prev) => {
       const next = prev.map((s) =>
         s.code === newDoc.subjectCode ? { ...s, year: payload.year } : s,
       )
       if (next.some((s) => s.code === newDoc.subjectCode)) return next
-      return [...next, { id: newDoc.subjectId, code: newDoc.subjectCode, name: payload.subjectCode, nameEn: payload.subjectCode, year: payload.year }]
+      return [
+        ...next,
+        {
+          id: newDoc.subjectId,
+          code: newDoc.subjectCode,
+          name: payload.subjectCode,
+          nameEn: payload.subjectCode,
+          year: payload.year,
+        },
+      ]
     })
+    if (newDoc.status === 'approved') {
+      setDocs((prev) => [newDoc, ...prev])
+      setNotice('')
+    } else {
+      setNotice('ส่งเอกสารแล้ว รอแอดมินตรวจสอบก่อนจึงจะแสดงในคลัง')
+    }
     setUploadOpen(false)
+  }
+
+  function handleYear(nextYear: string) {
+    setYear(nextYear)
+    setSubjectCode('all')
   }
 
   return (
@@ -130,7 +161,10 @@ export default function Page() {
             search={search}
             onSearch={setSearch}
             year={year}
-            onYear={setYear}
+            onYear={handleYear}
+            subjectCode={subjectCode}
+            onSubjectCode={setSubjectCode}
+            subjects={subjects}
             chip={chip}
             onChip={setChip}
             view={view}
@@ -142,6 +176,12 @@ export default function Page() {
         {loadError && (
           <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
             {loadError}
+          </div>
+        )}
+
+        {notice && (
+          <div className="mb-4 rounded-xl border border-accent/30 bg-accent/10 px-4 py-3 text-sm text-foreground">
+            {notice}
           </div>
         )}
 
@@ -163,6 +203,7 @@ export default function Page() {
                 subject={subjectMap.get(d.subjectCode)}
                 favorited={favorites.has(d.id)}
                 onToggleFavorite={() => toggleFavorite(d.id)}
+                onComment={() => setCommentDoc(d)}
               />
             ))}
           </div>
@@ -190,7 +231,10 @@ export default function Page() {
         terms={docs.map((d) => d.term)}
         onAddSubject={addSubject}
         onSubmit={handleUpload}
+        defaultUploader={profile?.displayName ?? ''}
       />
+
+      <CommentModal doc={commentDoc} onClose={() => setCommentDoc(null)} />
     </div>
   )
 }

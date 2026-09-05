@@ -1,6 +1,7 @@
 'use client'
 
-import { Heart, Layers, Search } from 'lucide-react'
+import { BookOpen, Heart, Layers, Search } from 'lucide-react'
+import type { Subject } from '@/lib/data'
 
 export type ChipId = 'all' | 'exam' | 'sheet' | 'lab'
 export type ViewId = 'all' | 'favorites'
@@ -17,6 +18,9 @@ export function FilterBar({
   onSearch,
   year,
   onYear,
+  subjectCode,
+  onSubjectCode,
+  subjects,
   chip,
   onChip,
   view,
@@ -27,12 +31,20 @@ export function FilterBar({
   onSearch: (v: string) => void
   year: string
   onYear: (v: string) => void
+  subjectCode: string
+  onSubjectCode: (v: string) => void
+  subjects: Subject[]
   chip: ChipId
   onChip: (v: ChipId) => void
   view: ViewId
   onView: (v: ViewId) => void
   favoriteCount: number
 }) {
+  const yearSubjects = subjects
+    .filter((s) => year !== 'all' && String(s.year) === year)
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'th'))
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -46,7 +58,7 @@ export function FilterBar({
           />
         </div>
 
-        <div className="relative sm:w-56">
+        <div className="relative sm:w-44">
           <Layers className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <select
             value={year}
@@ -61,6 +73,25 @@ export function FilterBar({
             <option value="4">ปี 4</option>
           </select>
         </div>
+
+        {year !== 'all' && (
+          <div className="relative sm:w-64">
+            <BookOpen className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <select
+              value={subjectCode}
+              onChange={(e) => onSubjectCode(e.target.value)}
+              aria-label="กรองตามชื่อวิชา"
+              className="h-12 w-full appearance-none rounded-xl border border-input bg-card pl-10 pr-8 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40"
+            >
+              <option value="all">ทุกวิชา</option>
+              {yearSubjects.map((s) => (
+                <option key={s.id} value={s.code}>
+                  {s.name} ({s.code})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

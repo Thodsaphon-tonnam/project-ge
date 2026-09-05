@@ -3,18 +3,20 @@
 import { buttonVariants } from '@/components/ui/button'
 import { categoryLabel, type CpeDoc, type Subject } from '@/lib/data'
 import { cn } from '@/lib/utils'
-import { Download, Eye, Heart } from 'lucide-react'
+import { Download, Eye, Heart, MessageSquare } from 'lucide-react'
 
 export function DocumentCard({
   doc,
   subject,
   favorited,
   onToggleFavorite,
+  onComment,
 }: {
   doc: CpeDoc
   subject: Subject | undefined
   favorited: boolean
   onToggleFavorite: () => void
+  onComment: () => void
 }) {
   return (
     <article className="group flex flex-col rounded-xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-md">
@@ -80,7 +82,16 @@ export function DocumentCard({
         </a>
       </div>
 
-      <p className="mt-2 truncate text-center text-[11px] text-muted-foreground">
+      <button
+        type="button"
+        onClick={onComment}
+        className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      >
+        <MessageSquare className="size-4" />
+        ความคิดเห็น
+      </button>
+
+      <p className="mt-1 truncate text-center text-[11px] text-muted-foreground">
         แบ่งปันโดย {doc.uploader}
       </p>
     </article>

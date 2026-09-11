@@ -4,7 +4,7 @@ export const CATEGORIES: { id: CategoryId; label: string; short: string }[] = [
   { id: 'midterm', label: 'ข้อสอบกลางภาค', short: 'ข้อสอบเก่า' },
   { id: 'final', label: 'ข้อสอบปลายภาค', short: 'ข้อสอบเก่า' },
   { id: 'sheet', label: 'ชีทสรุป', short: 'ชีทสรุป' },
-  { id: 'lab', label: 'สรุปแลป', short: 'สรุปแลป' },
+  { id: 'lab', label: 'ตัวอย่างผลแลป', short: 'ตัวอย่างผลแลป' },
 ]
 
 export const categoryLabel = (id: CategoryId) =>

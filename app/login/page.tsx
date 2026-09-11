@@ -3,6 +3,13 @@
 import { useAuth } from '@/components/auth-provider'
 import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
+import {
+  normalizeUsername,
+  USERNAME_HINT,
+  USERNAME_MAX,
+  USERNAME_MIN,
+  validateUsername,
+} from '@/lib/username'
 import { LoaderCircle } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useState } from 'react'
@@ -16,7 +23,7 @@ function LoginForm() {
   const [mode, setMode] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [displayName, setDisplayName] = useState('')
+  const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -35,7 +42,9 @@ function LoginForm() {
         await signIn(email.trim(), password)
         router.replace(next)
       } else {
-        const result = await signUp(email.trim(), password, displayName)
+        const invalid = validateUsername(username)
+        if (invalid) throw new Error(invalid)
+        const result = await signUp(email.trim(), password, username)
         if (result === 'confirm') {
           setInfo('สมัครสำเร็จ กรุณายืนยันอีเมลแล้วกลับมาเข้าสู่ระบบ')
           setMode('login')
@@ -60,19 +69,26 @@ function LoginForm() {
         <p className="mt-1.5 text-sm text-muted-foreground">
           {mode === 'login'
             ? 'เข้าสู่ระบบเพื่ออัปโหลดเอกสารและแสดงความคิดเห็น'
-            : 'สร้างบัญชีใหม่ด้วยอีเมลและรหัสผ่าน'}
+            : 'สร้างบัญชีใหม่ด้วยอีเมล Username ที่ไม่ซ้ำ และรหัสผ่าน'}
         </p>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="mt-8 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
           {mode === 'signup' && (
             <label className="block space-y-1.5">
-              <span className="text-sm font-medium">ชื่อที่แสดง</span>
+              <span className="text-sm font-medium">Username</span>
               <input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="เช่น พี่ปีสาม"
+                value={username}
+                onChange={(e) => setUsername(normalizeUsername(e.target.value))}
+                required
+                minLength={USERNAME_MIN}
+                maxLength={USERNAME_MAX}
+                autoComplete="username"
+                placeholder="เช่น พี่ปีสาม หรือ CoE_senior!"
                 className={inputClass}
               />
+              <span className="block text-xs text-muted-foreground">
+                {USERNAME_HINT}
+              </span>
             </label>
           )}
           <label className="block space-y-1.5">

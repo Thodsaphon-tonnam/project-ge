@@ -46,9 +46,12 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text,
   display_name text not null default 'anonymous',
+  username text,
   role text not null default 'user' check (role in ('user', 'admin')),
   created_at timestamptz not null default now()
 );
+
+alter table public.profiles add column if not exists username text;
 
 create table if not exists public.comments (
   id uuid primary key default gen_random_uuid(),
@@ -72,11 +75,17 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, display_name, role)
+  insert into public.profiles (id, email, display_name, username, role)
   values (
     new.id,
     new.email,
-    coalesce(new.raw_user_meta_data->>'display_name', split_part(new.email, '@', 1), 'anonymous'),
+    coalesce(
+      nullif(btrim(coalesce(new.raw_user_meta_data->>'username', '')), ''),
+      new.raw_user_meta_data->>'display_name',
+      split_part(new.email, '@', 1),
+      'anonymous'
+    ),
+    nullif(btrim(coalesce(new.raw_user_meta_data->>'username', '')), ''),
     'user'
   )
   on conflict (id) do nothing;
@@ -89,11 +98,17 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
-insert into public.profiles (id, email, display_name, role)
+insert into public.profiles (id, email, display_name, username, role)
 select
   u.id,
   u.email,
-  coalesce(u.raw_user_meta_data->>'display_name', split_part(u.email, '@', 1), 'anonymous'),
+  coalesce(
+    nullif(btrim(coalesce(u.raw_user_meta_data->>'username', '')), ''),
+    u.raw_user_meta_data->>'display_name',
+    split_part(u.email, '@', 1),
+    'anonymous'
+  ),
+  nullif(btrim(coalesce(u.raw_user_meta_data->>'username', '')), ''),
   'user'
 from auth.users u
 on conflict (id) do nothing;
@@ -157,7 +172,7 @@ create policy "Public can read approved documents"
 create policy "Authenticated can insert documents"
   on public.documents for insert
   to authenticated
-  with check (auth.uid() is not null);
+  with check (auth.uid() is not null and user_id = auth.uid());
 
 create policy "Admins can update documents"
   on public.documents for update
@@ -200,6 +215,7 @@ create policy "Authenticated can insert comments"
   to authenticated
   with check (
     auth.uid() is not null
+    and user_id = auth.uid()
     and exists (
       select 1 from public.documents d
       where d.id = document_id and d.status = 'approved'
@@ -235,6 +251,131 @@ create policy "Authenticated can upload exam files"
 create policy "Admins can delete exam files"
   on storage.objects for delete
   using (bucket_id = 'exam-files' and public.is_admin());
+
+-- ---------------------------------------------------------------------------
+-- Unique usernames + bind document credit to the signed-in account
+-- ---------------------------------------------------------------------------
+
+alter table public.profiles add column if not exists username text;
+
+alter table public.profiles drop constraint if exists profiles_username_format;
+alter table public.profiles
+  add constraint profiles_username_format
+  check (
+    username is null
+    or (
+      char_length(btrim(username)) between 3 and 24
+      and username !~ '[[:cntrl:]]'
+    )
+  );
+
+drop index if exists public.profiles_username_unique_idx;
+create unique index profiles_username_unique_idx
+  on public.profiles (lower(username))
+  where username is not null;
+
+create index if not exists documents_user_id_idx on public.documents (user_id);
+
+update public.documents d
+set user_id = null
+where d.user_id is not null
+  and not exists (select 1 from public.profiles p where p.id = d.user_id);
+
+alter table public.documents drop constraint if exists documents_user_id_fkey;
+alter table public.documents
+  add constraint documents_user_id_fkey
+  foreign key (user_id) references public.profiles (id) on delete set null;
+
+create or replace function public.username_taken(uname text, exclude_id uuid default null)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where lower(username) = lower(btrim(uname))
+      and (exclude_id is null or id <> exclude_id)
+  );
+$$;
+
+grant execute on function public.username_taken(text, uuid) to anon, authenticated;
+
+create or replace function public.documents_assign_uploader()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uname text;
+begin
+  if new.user_id is null then
+    new.user_id := auth.uid();
+  end if;
+
+  if auth.uid() is null then
+    raise exception 'กรุณาเข้าสู่ระบบก่อนอัปโหลด';
+  end if;
+
+  if new.user_id is distinct from auth.uid() and not public.is_admin() then
+    raise exception 'ไม่สามารถบันทึกเอกสารในนามผู้ใช้อื่นได้';
+  end if;
+
+  select p.username into uname
+  from public.profiles p
+  where p.id = new.user_id;
+
+  if uname is null or btrim(uname) = '' then
+    raise exception 'กรุณาตั้ง Username ก่อนอัปโหลดเอกสาร';
+  end if;
+
+  new.uploader_name := uname;
+  return new;
+end;
+$$;
+
+drop trigger if exists documents_assign_uploader on public.documents;
+create trigger documents_assign_uploader
+  before insert on public.documents
+  for each row execute procedure public.documents_assign_uploader();
+
+create or replace function public.comments_assign_author()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uname text;
+begin
+  if new.user_id is null then
+    new.user_id := auth.uid();
+  end if;
+
+  if new.user_id is distinct from auth.uid() then
+    raise exception 'ไม่สามารถแสดงความคิดเห็นในนามผู้ใช้อื่นได้';
+  end if;
+
+  select p.username into uname
+  from public.profiles p
+  where p.id = new.user_id;
+
+  if uname is null or btrim(uname) = '' then
+    raise exception 'กรุณาตั้ง Username ก่อนแสดงความคิดเห็น';
+  end if;
+
+  new.author_name := uname;
+  return new;
+end;
+$$;
+
+drop trigger if exists comments_assign_author on public.comments;
+create trigger comments_assign_author
+  before insert on public.comments
+  for each row execute procedure public.comments_assign_author();
 
 -- ---------------------------------------------------------------------------
 -- Promote an admin (run once after you sign up):

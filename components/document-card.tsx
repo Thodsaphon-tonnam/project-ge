@@ -3,6 +3,7 @@
 import { buttonVariants } from '@/components/ui/button'
 import { categoryLabel, type CpeDoc, type Subject } from '@/lib/data'
 import { cn } from '@/lib/utils'
+import { formatUploaderName } from '@/lib/username'
 import { Download, Eye, Heart, MessageSquare } from 'lucide-react'
 
 export function DocumentCard({
@@ -94,7 +95,7 @@ export function DocumentCard({
       </button>
 
       <p className="mt-1 truncate text-center text-[11px] text-muted-foreground">
-        แบ่งปันโดย {doc.uploader}
+        แบ่งปันโดย {formatUploaderName(doc.uploader)}
       </p>
     </article>
   )

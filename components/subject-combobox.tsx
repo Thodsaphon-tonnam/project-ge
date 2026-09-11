@@ -42,7 +42,7 @@ export function SubjectCombobox({
   subjects: Subject[]
   value: string
   onSelect: (code: string) => void
-  onAddNew: (query: string) => void | Promise<void>
+  onAddNew: (query: string) => void
   disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
@@ -166,7 +166,7 @@ export function SubjectCombobox({
             >
               <Plus className="size-4 shrink-0" />
               <span className="min-w-0 truncate">
-                เพิ่มวิชาใหม่:{' '}
+                เพิ่มรายวิชาใหม่ :{' '}
                 <span className="font-semibold text-foreground">{query.trim()}</span>
               </span>
             </button>

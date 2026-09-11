@@ -1,10 +1,11 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { CATEGORIES, YEAR_LEVELS, type CategoryId, type Subject, type YearLevel } from '@/lib/data'
+import { CATEGORIES, YEAR_LEVELS, parseSubjectInput, type CategoryId, type Subject, type YearLevel } from '@/lib/data'
 import { CloudUpload, FileText, LoaderCircle, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { SubjectCombobox } from '@/components/subject-combobox'
+import { SubjectDraftCard, type SubjectDraft } from '@/components/subject-draft-card'
 import { TermCombobox } from '@/components/term-combobox'
 
 export const DEFAULT_TERMS = [
@@ -24,7 +25,6 @@ export type UploadPayload = {
   category: CategoryId
   term: string
   year: YearLevel
-  uploader: string
   file: File
 }
 
@@ -35,15 +35,15 @@ export function UploadModal({
   onAddSubject,
   onSubmit,
   terms = DEFAULT_TERMS,
-  defaultUploader = '',
+  uploaderUsername,
 }: {
   open: boolean
   onClose: () => void
   subjects: Subject[]
-  onAddSubject: (query: string, year: YearLevel) => Promise<string>
+  onAddSubject: (input: { code: string; name: string }, year: YearLevel) => Promise<string>
   onSubmit: (payload: UploadPayload) => Promise<void>
   terms?: string[]
-  defaultUploader?: string
+  uploaderUsername: string
 }) {
   const [title, setTitle] = useState('')
   const [subjectCode, setSubjectCode] = useState('')
@@ -51,10 +51,10 @@ export function UploadModal({
   const [term, setTerm] = useState('')
   const [customTerms, setCustomTerms] = useState<string[]>([])
   const [year, setYear] = useState<YearLevel>(1)
-  const [uploader, setUploader] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
+  const [subjectDraft, setSubjectDraft] = useState<SubjectDraft | null>(null)
   const [addingSubject, setAddingSubject] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -67,12 +67,12 @@ export function UploadModal({
       setTerm('')
       setCustomTerms([])
       setYear(1)
-      setUploader(defaultUploader)
       setFile(null)
       setError('')
+      setSubjectDraft(null)
       setSubmitting(false)
     }
-  }, [open, defaultUploader])
+  }, [open])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -99,12 +99,29 @@ export function UploadModal({
     setFile(f)
   }
 
-  async function handleAddSubject(query: string) {
+  function startSubjectDraft(query: string) {
+    setError('')
+    setSubjectDraft(parseSubjectInput(query))
+    setSubjectCode('')
+  }
+
+  function cancelSubjectDraft() {
+    setSubjectDraft(null)
+    setError('')
+  }
+
+  async function saveSubjectDraft() {
+    if (!subjectDraft) return
+    const code = subjectDraft.code.trim()
+    const name = subjectDraft.name.trim()
+    if (!code) return setError('กรุณากรอกรหัสวิชา')
+    if (!name) return setError('กรุณากรอกชื่อวิชา')
     setAddingSubject(true)
     setError('')
     try {
-      const code = await onAddSubject(query, year)
-      setSubjectCode(code)
+      const savedCode = await onAddSubject({ code, name }, year)
+      setSubjectCode(savedCode)
+      setSubjectDraft(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'เพิ่มวิชาไม่สำเร็จ')
     } finally {
@@ -115,8 +132,10 @@ export function UploadModal({
   async function handleSubmit() {
     if (!file) return setError('กรุณาเลือกไฟล์ PDF ก่อน')
     if (!title.trim()) return setError('กรุณาตั้งชื่อเอกสาร')
-    if (!subjectCode) return setError('กรุณาเลือกวิชา')
+    if (!subjectCode) return setError('กรุณาเลือกวิชา หรือบันทึกวิชาใหม่ก่อน')
+    if (subjectDraft) return setError('กรุณากดบันทึกวิชาใหม่ หรือยกเลิกฉบับร่างก่อนอัปโหลด')
     if (!term.trim()) return setError('กรุณาเลือกหรือพิมพ์เทอม / ปีการศึกษา')
+    if (!uploaderUsername) return setError('กรุณาตั้ง Username ก่อนอัปโหลดเอกสาร')
     setError('')
     setSubmitting(true)
     try {
@@ -126,7 +145,6 @@ export function UploadModal({
         category,
         term: term.trim(),
         year,
-        uploader: uploader.trim() || 'anonymous',
         file,
       })
     } catch (err) {
@@ -220,17 +238,29 @@ export function UploadModal({
           </Field>
 
           <Field label="วิชา">
-            <SubjectCombobox
-              subjects={subjects}
-              value={subjectCode}
-              onSelect={(code) => {
-                setSubjectCode(code)
-                const selected = subjects.find((s) => s.code === code)
-                if (selected) setYear(selected.year)
-              }}
-              onAddNew={handleAddSubject}
-              disabled={addingSubject}
-            />
+            <div className="space-y-2">
+              <SubjectCombobox
+                subjects={subjects}
+                value={subjectCode}
+                onSelect={(code) => {
+                  setSubjectDraft(null)
+                  setSubjectCode(code)
+                  const selected = subjects.find((s) => s.code === code)
+                  if (selected) setYear(selected.year)
+                }}
+                onAddNew={startSubjectDraft}
+                disabled={addingSubject}
+              />
+              {subjectDraft && (
+                <SubjectDraftCard
+                  draft={subjectDraft}
+                  onChange={setSubjectDraft}
+                  onSave={() => void saveSubjectDraft()}
+                  onCancel={cancelSubjectDraft}
+                  saving={addingSubject}
+                />
+              )}
+            </div>
           </Field>
 
           <Field label="ชั้นปี">
@@ -295,13 +325,10 @@ export function UploadModal({
             />
           </Field>
 
-          <Field label="ชื่อผู้แบ่งปัน / นามแฝง (ไม่บังคับ)">
-            <input
-              value={uploader}
-              onChange={(e) => setUploader(e.target.value)}
-              placeholder="เช่น พี่ปีสาม หรือเว้นว่างเพื่อไม่ระบุตัวตน"
-              className={inputClass}
-            />
+          <Field label="ผู้แบ่งปัน">
+            <div className="flex h-11 items-center rounded-lg border border-input bg-muted/50 px-3 text-base text-foreground md:text-sm">
+              <span className="font-medium">@{uploaderUsername || '—'}</span>
+            </div>
           </Field>
 
           {error && <p className="text-sm font-medium text-destructive">{error}</p>}

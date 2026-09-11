@@ -75,6 +75,13 @@ export type Database = {
             referencedRelation: 'subjects'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'documents_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
         ]
       }
       profiles: {
@@ -82,6 +89,7 @@ export type Database = {
           id: string
           email: string | null
           display_name: string
+          username: string | null
           role: string
           created_at: string
         }
@@ -89,6 +97,7 @@ export type Database = {
           id: string
           email?: string | null
           display_name?: string
+          username?: string | null
           role?: string
           created_at?: string
         }
@@ -96,6 +105,7 @@ export type Database = {
           id?: string
           email?: string | null
           display_name?: string
+          username?: string | null
           role?: string
           created_at?: string
         }
@@ -143,6 +153,10 @@ export type Database = {
     Functions: {
       is_admin: {
         Args: Record<string, never>
+        Returns: boolean
+      }
+      username_taken: {
+        Args: { uname: string; exclude_id?: string | null }
         Returns: boolean
       }
     }

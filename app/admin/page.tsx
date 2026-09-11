@@ -4,6 +4,7 @@ import { useAuth } from '@/components/auth-provider'
 import { SiteHeader } from '@/components/site-header'
 import { Button } from '@/components/ui/button'
 import { categoryLabel, type CpeDoc, type DocumentStatus, type Subject } from '@/lib/data'
+import { formatUploaderName } from '@/lib/username'
 import { deleteDocument, fetchAdminDocuments, setDocumentStatus } from '@/lib/vault'
 import { Check, Eye, FolderOpen, LoaderCircle, ShieldAlert, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
@@ -172,7 +173,7 @@ export default function AdminPage() {
                     </div>
                     <h2 className="mt-2 font-semibold">{doc.title}</h2>
                     <p className="text-sm text-muted-foreground">
-                      {subject?.name ?? doc.subjectCode} · {doc.term} · แบ่งปันโดย {doc.uploader}
+                      {subject?.name ?? doc.subjectCode} · {doc.term} · แบ่งปันโดย {formatUploaderName(doc.uploader)}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">

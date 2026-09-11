@@ -1,4 +1,5 @@
 import { AuthProvider } from '@/components/auth-provider'
+import { UsernameGate } from '@/components/username-gate'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Noto_Sans_Thai, Geist_Mono } from 'next/font/google'
@@ -38,8 +39,10 @@ export default function RootLayout({
     <html lang="th" className={`light ${notoThai.variable} ${geistMono.variable}`}>
       <body className="bg-background font-sans antialiased">
         <AuthProvider>
-          {children}
-          {process.env.NODE_ENV === 'production' && <Analytics />}
+          <UsernameGate>
+            {children}
+            {process.env.NODE_ENV === 'production' && <Analytics />}
+          </UsernameGate>
         </AuthProvider>
       </body>
     </html>

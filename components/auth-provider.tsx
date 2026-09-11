@@ -1,6 +1,13 @@
 'use client'
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase'
+import {
+  isUniqueViolation,
+  isUsernameTaken,
+  normalizeUsername,
+  uniqueUsernameMessage,
+  validateUsername,
+} from '@/lib/username'
 import type { User } from '@supabase/supabase-js'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
@@ -8,6 +15,7 @@ export type Profile = {
   id: string
   email: string
   displayName: string
+  username: string
   role: 'user' | 'admin'
 }
 
@@ -17,18 +25,26 @@ type AuthContextValue = {
   loading: boolean
   isAdmin: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, displayName: string) => Promise<'session' | 'confirm'>
+  signUp: (email: string, password: string, username: string) => Promise<'session' | 'confirm'>
+  saveUsername: (username: string) => Promise<void>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function mapProfile(row: { id: string; email: string | null; display_name: string; role: string }): Profile {
+function mapProfile(row: {
+  id: string
+  email: string | null
+  display_name: string
+  username: string | null
+  role: string
+}): Profile {
   return {
     id: row.id,
     email: row.email ?? '',
-    displayName: row.display_name || 'anonymous',
+    displayName: row.username || row.display_name || 'anonymous',
+    username: row.username ?? '',
     role: row.role === 'admin' ? 'admin' : 'user',
   }
 }
@@ -37,7 +53,7 @@ async function loadProfile(userId: string, attempts = 4): Promise<Profile | null
   for (let i = 0; i < attempts; i++) {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, email, display_name, role')
+      .select('id, email, display_name, username, role')
       .eq('id', userId)
       .maybeSingle()
     if (!error && data) return mapProfile(data)
@@ -97,15 +113,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string, displayName: string) => {
+  const signUp = useCallback(async (email: string, password: string, rawUsername: string) => {
+    const username = normalizeUsername(rawUsername)
+    const invalid = validateUsername(username)
+    if (invalid) throw new Error(invalid)
+    if (await isUsernameTaken(username)) throw new Error(uniqueUsernameMessage())
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: displayName.trim() || email.split('@')[0] } },
+      options: { data: { username, display_name: username } },
     })
-    if (error) throw error
+    if (error) {
+      if (isUniqueViolation(error) || /username|duplicate|unique/i.test(error.message)) {
+        throw new Error(uniqueUsernameMessage())
+      }
+      throw error
+    }
     return data.session ? 'session' : 'confirm'
   }, [])
+
+  const saveUsername = useCallback(
+    async (rawUsername: string) => {
+      if (!user) throw new Error('กรุณาเข้าสู่ระบบ')
+      const username = normalizeUsername(rawUsername)
+      const invalid = validateUsername(username)
+      if (invalid) throw new Error(invalid)
+      if (await isUsernameTaken(username, user.id)) throw new Error(uniqueUsernameMessage())
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username, display_name: username })
+        .eq('id', user.id)
+      if (error) {
+        if (isUniqueViolation(error)) throw new Error(uniqueUsernameMessage())
+        throw error
+      }
+      const next = await loadProfile(user.id)
+      setProfile(next)
+    },
+    [user],
+  )
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
@@ -122,10 +170,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: profile?.role === 'admin',
       signIn,
       signUp,
+      saveUsername,
       signOut,
       refreshProfile,
     }),
-    [user, profile, loading, signIn, signUp, signOut, refreshProfile],
+    [user, profile, loading, signIn, signUp, saveUsername, signOut, refreshProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

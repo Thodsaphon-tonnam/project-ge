@@ -37,6 +37,7 @@ export type CpeDoc = {
   category: CategoryId
   term: string
   uploader: string
+  uploaderId: string | null
   fileUrl: string
   year: YearLevel
   status: DocumentStatus
@@ -54,6 +55,23 @@ export type DocComment = {
 export function asStatus(value: string | null | undefined): DocumentStatus {
   if (value === 'pending' || value === 'rejected') return value
   return 'approved'
+}
+
+export function parseSubjectInput(query: string): { code: string; name: string } {
+  const trimmed = query.trim().replace(/\s+/g, ' ')
+  const codeMatch = trimmed.match(/[A-Za-z]{2,}\d{3,}/)
+  const code = (codeMatch?.[0] ?? trimmed).toUpperCase().replace(/\s+/g, '')
+  const nameFromRest = codeMatch
+    ? trimmed.replace(codeMatch[0], ' ').replace(/\s+/g, ' ').trim()
+    : ''
+  return {
+    code,
+    name: nameFromRest || trimmed,
+  }
+}
+
+export function normalizeSubjectCode(code: string) {
+  return code.trim().toUpperCase().replace(/\s+/g, '')
 }
 
 export function asYear(value: number | string | null | undefined): YearLevel {

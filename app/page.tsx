@@ -14,7 +14,7 @@ import { FolderOpen, LoaderCircle } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 export default function Page() {
-  const { user, profile, isAdmin } = useAuth()
+  const { profile, isAdmin } = useAuth()
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [docs, setDocs] = useState<CpeDoc[]>([])
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
@@ -95,8 +95,8 @@ export default function Page() {
     })
   }
 
-  async function addSubject(query: string, yearLevel: Subject['year']): Promise<string> {
-    const created = await createSubject(query, yearLevel)
+  async function addSubject(input: { code: string; name: string }, yearLevel: Subject['year']): Promise<string> {
+    const created = await createSubject(input, yearLevel)
     setSubjects((prev) => {
       const without = prev.filter((s) => s.id !== created.id)
       return [...without, created]
@@ -108,7 +108,6 @@ export default function Page() {
     const newDoc = await uploadDocument({
       ...payload,
       subjects,
-      userId: user?.id,
       autoApprove: isAdmin,
     })
     setSubjects((prev) => {
@@ -231,7 +230,7 @@ export default function Page() {
         terms={docs.map((d) => d.term)}
         onAddSubject={addSubject}
         onSubmit={handleUpload}
-        defaultUploader={profile?.displayName ?? ''}
+        uploaderUsername={profile?.username ?? ''}
       />
 
       <CommentModal doc={commentDoc} onClose={() => setCommentDoc(null)} />

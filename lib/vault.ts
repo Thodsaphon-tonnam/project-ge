@@ -1,7 +1,9 @@
-import { asCategory, asStatus, asYear, toSubject, type CategoryId, type CpeDoc, type Subject, type YearLevel } from '@/lib/data'
+import { asCategory, asStatus, asYear, normalizeSubjectCode, parseSubjectInput, toSubject, type CategoryId, type CpeDoc, type Subject, type YearLevel } from '@/lib/data'
 import { EXAM_FILES_BUCKET, isSupabaseConfigured, supabase } from '@/lib/supabase'
 
 const DOCUMENT_SELECT =
+  'id, title, subject_id, category, term_year, year, file_url, uploader_name, status, user_id, created_at, subjects ( id, code, name, year ), profiles!documents_user_id_fkey ( username )'
+const DOCUMENT_SELECT_FALLBACK =
   'id, title, subject_id, category, term_year, year, file_url, uploader_name, status, user_id, created_at, subjects ( id, code, name, year )'
 
 export class VaultError extends Error {
@@ -29,14 +31,17 @@ type DocumentRow = {
   file_url: string
   uploader_name: string
   status: string
+  user_id: string | null
   subjects:
     | { id: string; code: string; name: string; year: number | null }
     | { id: string; code: string; name: string; year: number | null }[]
     | null
+  profiles?: { username: string | null } | { username: string | null }[] | null
 }
 
 function mapDocument(row: DocumentRow): CpeDoc {
   const subject = Array.isArray(row.subjects) ? row.subjects[0] : row.subjects
+  const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles
   return {
     id: row.id,
     title: row.title,
@@ -44,7 +49,8 @@ function mapDocument(row: DocumentRow): CpeDoc {
     subjectCode: subject?.code ?? '',
     category: asCategory(row.category),
     term: row.term_year,
-    uploader: row.uploader_name || 'anonymous',
+    uploader: profile?.username || row.uploader_name || 'anonymous',
+    uploaderId: row.user_id ?? null,
     fileUrl: row.file_url,
     year: asYear(row.year ?? subject?.year),
     status: asStatus(row.status),
@@ -65,7 +71,15 @@ export async function fetchDocuments(): Promise<{ docs: CpeDoc[]; subjects: Subj
     fetchSubjects(),
   ])
 
-  if (docsResult.error) throw new VaultError(docsResult.error.message)
+  if (docsResult.error) {
+    const fallback = await supabase
+      .from('documents')
+      .select(DOCUMENT_SELECT_FALLBACK)
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false })
+    if (fallback.error) throw new VaultError(docsResult.error.message)
+    return { docs: (fallback.data ?? []).map(mapDocument), subjects }
+  }
   return { docs: (docsResult.data ?? []).map(mapDocument), subjects }
 }
 
@@ -76,7 +90,14 @@ export async function fetchAdminDocuments(): Promise<{ docs: CpeDoc[]; subjects:
     fetchSubjects(),
   ])
 
-  if (docsResult.error) throw new VaultError(docsResult.error.message)
+  if (docsResult.error) {
+    const fallback = await supabase
+      .from('documents')
+      .select(DOCUMENT_SELECT_FALLBACK)
+      .order('created_at', { ascending: false })
+    if (fallback.error) throw new VaultError(docsResult.error.message)
+    return { docs: (fallback.data ?? []).map(mapDocument), subjects }
+  }
   return { docs: (docsResult.data ?? []).map(mapDocument), subjects }
 }
 
@@ -107,12 +128,21 @@ export async function deleteDocument(doc: CpeDoc): Promise<void> {
   if (error) throw new VaultError(error.message)
 }
 
-export async function createSubject(query: string, year: YearLevel = 1): Promise<Subject> {
+export async function createSubject(
+  input: string | { code: string; name: string },
+  year: YearLevel = 1,
+): Promise<Subject> {
   requireSupabase()
-  const trimmed = query.trim()
-  const codeMatch = trimmed.match(/[A-Za-z]{2,}\d{3,}/)
-  const code = (codeMatch?.[0] ?? trimmed).toUpperCase().replace(/\s+/g, '')
-  const name = trimmed
+  const parsed =
+    typeof input === 'string'
+      ? parseSubjectInput(input)
+      : {
+          code: normalizeSubjectCode(input.code),
+          name: input.name.trim() || normalizeSubjectCode(input.code),
+        }
+  const code = parsed.code
+  const name = parsed.name.trim() || code
+  if (!code) throw new VaultError('กรุณากรอกรหัสวิชา')
 
   const existing = await supabase.from('subjects').select('id, code, name, year').eq('code', code).maybeSingle()
   if (existing.error) throw new VaultError(existing.error.message)
@@ -158,13 +188,24 @@ export async function uploadDocument(payload: {
   category: CategoryId
   term: string
   year: YearLevel
-  uploader: string
   file: File
   subjects: Subject[]
-  userId?: string | null
   autoApprove?: boolean
 }): Promise<CpeDoc> {
   requireSupabase()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new VaultError('กรุณาเข้าสู่ระบบก่อนอัปโหลด')
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('id', user.id)
+    .maybeSingle()
+  if (profileError) throw new VaultError(profileError.message)
+  if (!profile?.username) throw new VaultError('กรุณาตั้ง Username ก่อนอัปโหลดเอกสาร')
 
   let subject = payload.subjects.find((s) => s.code === payload.subjectCode)
   if (!subject) {
@@ -200,9 +241,9 @@ export async function uploadDocument(payload: {
       term_year: payload.term,
       year: payload.year,
       file_url: fileUrl,
-      uploader_name: payload.uploader,
+      uploader_name: profile.username,
       status,
-      user_id: payload.userId ?? null,
+      user_id: user.id,
     })
     .select(DOCUMENT_SELECT)
     .single()

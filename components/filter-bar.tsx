@@ -11,7 +11,7 @@ const CHIPS: { id: ChipId; label: string }[] = [
   { id: 'all', label: 'ทั้งหมด' },
   { id: 'exam', label: 'ข้อสอบเก่า' },
   { id: 'sheet', label: 'ชีทสรุป' },
-  { id: 'lab', label: 'สรุปแลป' },
+  { id: 'lab', label: 'ตัวอย่างผลแลป' },
 ]
 
 export function FilterBar({

@@ -4,6 +4,7 @@ import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import { createComment, fetchComments } from '@/lib/comments'
 import type { CpeDoc, DocComment } from '@/lib/data'
+import { formatUploaderName } from '@/lib/username'
 import { LoaderCircle, MessageSquare, Send, X } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
@@ -51,7 +52,7 @@ export function CommentModal({
       const created = await createComment({
         documentId: doc.id,
         userId: user.id,
-        authorName: profile?.displayName || user.email || 'anonymous',
+        authorName: profile?.username || user.email || 'anonymous',
         body,
       })
       setComments((prev) => [...prev, created])
@@ -100,7 +101,7 @@ export function CommentModal({
             comments.map((c) => (
               <article key={c.id} className="rounded-xl border border-border bg-muted/40 px-3.5 py-3">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-foreground">{c.authorName}</p>
+                  <p className="text-sm font-medium text-foreground">{formatUploaderName(c.authorName)}</p>
                   <time className="text-[11px] text-muted-foreground">
                     {new Date(c.createdAt).toLocaleString('th-TH', {
                       dateStyle: 'medium',

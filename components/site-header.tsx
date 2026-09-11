@@ -50,7 +50,7 @@ export function SiteHeader({ onUpload }: { onUpload?: () => void }) {
         <div className="flex shrink-0 items-center gap-2">
           {!loading && user && (
             <span className="hidden max-w-36 truncate text-sm text-primary-foreground/80 sm:inline">
-              {profile?.displayName || user.email}
+              {profile?.username ? `@${profile.username}` : user.email}
             </span>
           )}
           {isAdmin && (

@@ -3,7 +3,7 @@
 import { useAuth } from '@/components/auth-provider'
 import { Button } from '@/components/ui/button'
 import {
-  normalizeUsername,
+  sanitizeUsernameInput,
   uniqueUsernameMessage,
   USERNAME_HINT,
   USERNAME_MAX,
@@ -14,12 +14,12 @@ import { LoaderCircle } from 'lucide-react'
 import { useState } from 'react'
 
 export function UsernameGate({ children }: { children: React.ReactNode }) {
-  const { user, profile, loading, saveUsername } = useAuth()
+  const { user, profile, loading, passwordRecovery, saveUsername } = useAuth()
   const [username, setUsername] = useState('')
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const needsUsername = Boolean(user && profile && !profile.username)
+  const needsUsername = Boolean(user && profile && !profile.username && !passwordRecovery)
 
   if (loading || !needsUsername) return children
 
@@ -58,12 +58,12 @@ export function UsernameGate({ children }: { children: React.ReactNode }) {
             <span className="text-sm font-medium">Username</span>
             <input
               value={username}
-              onChange={(e) => setUsername(normalizeUsername(e.target.value))}
+              onChange={(e) => setUsername(sanitizeUsernameInput(e.target.value))}
               required
               minLength={USERNAME_MIN}
               maxLength={USERNAME_MAX}
               autoComplete="username"
-              placeholder="เช่น พี่ปีสาม หรือ CoE_senior!"
+              placeholder="เช่น พี่ ปีสาม หรือ CoE senior"
               className="h-11 w-full rounded-lg border border-input bg-background px-3 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/40 md:text-sm"
             />
             <span className="block text-xs text-muted-foreground">

@@ -5,8 +5,12 @@ export const USERNAME_MAX = 24
 
 const CONTROL_CHARS = /[\u0000-\u001F\u007F]/g
 
+export function sanitizeUsernameInput(raw: string) {
+  return raw.replace(CONTROL_CHARS, '').replace(/^\s+/, '').replace(/\s+/g, ' ')
+}
+
 export function normalizeUsername(raw: string) {
-  return raw.replace(CONTROL_CHARS, '').replace(/\s+/g, ' ').trim()
+  return sanitizeUsernameInput(raw).trim()
 }
 
 export function validateUsername(raw: string): string | null {
@@ -46,4 +50,4 @@ export function uniqueUsernameMessage() {
   return 'Username นี้ถูกใช้แล้ว กรุณาเลือกชื่ออื่น'
 }
 
-export const USERNAME_HINT = `ไม่ซ้ำในระบบ · ${USERNAME_MIN}–${USERNAME_MAX} ตัวอักษร ใช้ภาษาไทย อังกฤษ และอักขระพิเศษได้`
+export const USERNAME_HINT = `ไม่ซ้ำในระบบ · ${USERNAME_MIN}–${USERNAME_MAX} ตัวอักษร ใช้ภาษาไทย อังกฤษ เว้นวรรค และอักขระพิเศษได้`

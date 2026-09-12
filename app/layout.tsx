@@ -1,4 +1,5 @@
 import { AuthProvider } from '@/components/auth-provider'
+import { RecoveryRedirect } from '@/components/recovery-redirect'
 import { UsernameGate } from '@/components/username-gate'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
@@ -39,6 +40,7 @@ export default function RootLayout({
     <html lang="th" className={`light ${notoThai.variable} ${geistMono.variable}`}>
       <body className="bg-background font-sans antialiased">
         <AuthProvider>
+          <RecoveryRedirect />
           <UsernameGate>
             {children}
             {process.env.NODE_ENV === 'production' && <Analytics />}

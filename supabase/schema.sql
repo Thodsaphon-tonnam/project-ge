@@ -258,6 +258,7 @@ create policy "Admins can delete exam files"
 
 alter table public.profiles add column if not exists username text;
 
+-- Usernames may include spaces and punctuation. Uniqueness is case-insensitive after trim.
 alter table public.profiles drop constraint if exists profiles_username_format;
 alter table public.profiles
   add constraint profiles_username_format
@@ -271,7 +272,7 @@ alter table public.profiles
 
 drop index if exists public.profiles_username_unique_idx;
 create unique index profiles_username_unique_idx
-  on public.profiles (lower(username))
+  on public.profiles (lower(btrim(username)))
   where username is not null;
 
 create index if not exists documents_user_id_idx on public.documents (user_id);
@@ -296,7 +297,7 @@ as $$
   select exists (
     select 1
     from public.profiles
-    where lower(username) = lower(btrim(uname))
+    where lower(btrim(username)) = lower(btrim(uname))
       and (exclude_id is null or id <> exclude_id)
   );
 $$;

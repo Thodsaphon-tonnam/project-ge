@@ -24,14 +24,44 @@ type AuthContextValue = {
   profile: Profile | null
   loading: boolean
   isAdmin: boolean
+  passwordRecovery: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, username: string) => Promise<'session' | 'confirm'>
   saveUsername: (username: string) => Promise<void>
+  requestPasswordReset: (email: string) => Promise<void>
+  updatePassword: (password: string) => Promise<void>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+
+const RECOVERY_FLAG = 'cpe-vault-password-recovery'
+
+function isRecoveryUrl() {
+  if (typeof window === 'undefined') return false
+  const blob = `${window.location.hash}${window.location.search}`
+  return /type=recovery/i.test(blob)
+}
+
+function readRecoveryFlag() {
+  if (typeof window === 'undefined') return false
+  if (isRecoveryUrl()) return true
+  try {
+    return sessionStorage.getItem(RECOVERY_FLAG) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeRecoveryFlag(on: boolean) {
+  try {
+    if (on) sessionStorage.setItem(RECOVERY_FLAG, '1')
+    else sessionStorage.removeItem(RECOVERY_FLAG)
+  } catch {
+    /* ignore */
+  }
+}
 
 function mapProfile(row: {
   id: string
@@ -66,6 +96,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
+
+  const markRecovery = useCallback((on: boolean) => {
+    writeRecoveryFlag(on)
+    setPasswordRecovery(on)
+  }, [])
+
+  useEffect(() => {
+    if (readRecoveryFlag()) setPasswordRecovery(true)
+  }, [])
 
   const refreshProfile = useCallback(async () => {
     if (!user) {
@@ -90,8 +130,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     })
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
+      if (event === 'PASSWORD_RECOVERY') markRecovery(true)
+      if (event === 'SIGNED_OUT') markRecovery(false)
     })
 
     return () => {
@@ -155,12 +197,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user],
   )
 
+  const requestPasswordReset = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/update-password`,
+    })
+    if (error) throw error
+  }, [])
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+    markRecovery(false)
+  }, [markRecovery])
+
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
     if (error) throw error
     setUser(null)
     setProfile(null)
-  }, [])
+    markRecovery(false)
+  }, [markRecovery])
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -168,13 +224,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       loading,
       isAdmin: profile?.role === 'admin',
+      passwordRecovery,
       signIn,
       signUp,
       saveUsername,
+      requestPasswordReset,
+      updatePassword,
       signOut,
       refreshProfile,
     }),
-    [user, profile, loading, signIn, signUp, saveUsername, signOut, refreshProfile],
+    [
+      user,
+      profile,
+      loading,
+      passwordRecovery,
+      signIn,
+      signUp,
+      saveUsername,
+      requestPasswordReset,
+      updatePassword,
+      signOut,
+      refreshProfile,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

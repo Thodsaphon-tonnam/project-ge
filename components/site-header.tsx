@@ -2,13 +2,22 @@
 
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/components/auth-provider'
-import { Boxes, LogIn, LogOut, Plus, ShieldCheck } from 'lucide-react'
+import { Boxes, ClipboardList, LogIn, LogOut, Plus, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 export function SiteHeader({ onUpload }: { onUpload?: () => void }) {
   const { user, profile, isAdmin, loading, signOut } = useAuth()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const showAuth = mounted && !loading
+  const showAdmin = showAuth && isAdmin
 
   function handleUpload() {
     if (!user) {
@@ -35,7 +44,16 @@ export function SiteHeader({ onUpload }: { onUpload?: () => void }) {
             >
               คลังข้อสอบ
             </Link>
-            {isAdmin && (
+            <a
+              href="https://docs.google.com/forms/d/e/1FAIpQLSc2jkPCmedkv7AEPj9hqpZgSStNLjbYYNXSNzz44TkyfFSMHg/viewform?pli=1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-primary-foreground/80 transition-colors hover:bg-white/10 hover:text-primary-foreground"
+            >
+              <ClipboardList className="size-4" />
+              ประเมินผลเว็บไซต์
+            </a>
+            {showAdmin && (
               <Link
                 href="/admin"
                 className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-primary-foreground/80 transition-colors hover:bg-white/10 hover:text-primary-foreground"
@@ -48,12 +66,23 @@ export function SiteHeader({ onUpload }: { onUpload?: () => void }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          {!loading && user && (
+          {showAuth && user && (
             <span className="hidden max-w-36 truncate text-sm text-primary-foreground/80 sm:inline">
               {profile?.username ? `@${profile.username}` : user.email}
             </span>
           )}
-          {isAdmin && (
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLSc2jkPCmedkv7AEPj9hqpZgSStNLjbYYNXSNzz44TkyfFSMHg/viewform?pli=1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="md:hidden"
+            aria-label="ประเมินผลเว็บไซต์"
+          >
+            <Button size="lg" variant="ghost" className="text-primary-foreground hover:bg-white/10">
+              <ClipboardList className="size-4" />
+            </Button>
+          </a>
+          {showAdmin && (
             <Link href="/admin" className="md:hidden">
               <Button size="lg" variant="ghost" className="text-primary-foreground hover:bg-white/10">
                 <ShieldCheck className="size-4" />
@@ -71,7 +100,7 @@ export function SiteHeader({ onUpload }: { onUpload?: () => void }) {
               <span className="sm:hidden">อัปโหลด</span>
             </Button>
           )}
-          {!loading &&
+          {showAuth &&
             (user ? (
               <Button
                 size="lg"
